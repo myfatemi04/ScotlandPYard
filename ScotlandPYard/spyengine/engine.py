@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from numpy.random import choice
 from PyQt5.QtCore import QObject, QTimer, pyqtSignal
@@ -46,6 +48,9 @@ class GameEngine(QObject):
         # normalize columns of the matrix
         # add an epsilon to avoid division by zero
         self.positionUpdateMatrix = self.positionUpdateMatrix / (np.sum(self.positionUpdateMatrix, axis=1, keepdims=True) + 1e-10)
+
+        self.positionUpdateMatrix.dump("positionUpdateMatrix.npy")
+
         # self.players = [HumanDetective(self) for i in range(num_detectives)]
         self.players = [StupidAIDetective(self) for i in range(num_detectives)]
         self.turn = 0
@@ -63,6 +68,10 @@ class GameEngine(QObject):
         self.players.append(self.mrx)
         self.game_state_changed.connect(self.check_game_state)
 
+        ### For exporting data ###
+        self.true_pos_history = []
+        self.prob_history = []
+
     def get_game_state(self):
         state = {
             "players_state": [player.get_info() for player in self.players],
@@ -70,24 +79,6 @@ class GameEngine(QObject):
             "mrxmoves": self.mrxMoves
         }
         return state
-
-    def check_game_state(self):
-        '''
-        Checks if the game is over or not
-        '''
-        # for p in self.players[:-1]:
-        #     if p.location == self.mrx.location:
-        #         self.game_over = True
-                # msg = "{} has caught Mr.X\n\tGame over!".format(p.name)
-
-        if len(self.mrxMoves) == self.maxMoves:
-            self.game_over = True
-            msg = "Mr.X has evaded justice!\n\tGame over!"
-
-        if self.game_over:
-            self.game_over_signal.emit(msg)
-            print(msg)
-            exit()
 
     def get_valid_nodes(self, player_name, ticket):
         player = None
@@ -150,12 +141,18 @@ class GameEngine(QObject):
                     sorted_probs = self.mrXLikelihoodVector[sorted_prob_indexes]
                     prob_position = sorted_prob_indexes.tolist().index(int(node.nodeid) - 1)
                     random_prob_percentile = sorted_probs[sorted_probs >= (1 / n_possible_positions)].sum()
-                    print("We last knew Mr. X's position", len(self.mrxMoves), "moves ago")
-                    print("p(true position):", self.mrXLikelihoodVector[int(node.nodeid) - 1])
-                    print("p(rand position):", 1/n_possible_positions)
-                    print("rank of true position:", prob_position + 1, "out of", n_possible_positions, "possible positions")
-                    print("percentile:", self.mrXLikelihoodVector[sorted_prob_indexes[:prob_position]].sum())
-                    print("percentile [rand]:", random_prob_percentile)
+                    true_pos_prob = self.mrXLikelihoodVector[int(node.nodeid) - 1]
+
+                    ### For exporting data ###
+                    self.prob_history.append(self.mrXLikelihoodVector.copy())
+                    self.true_pos_history.append(int(node.nodeid) - 1)
+                    # print("We last knew Mr. X's position", len(self.mrxMoves), "moves ago")
+                    # print("p(true position):", true_pos_prob)
+                    # print("p(rand position):", 1/n_possible_positions)
+                    # print("rank of true position:", prob_position + 1, "out of", n_possible_positions, "possible positions")
+                    # print("percentile:", self.mrXLikelihoodVector[sorted_prob_indexes[:prob_position]].sum())
+                    # print("percentile [rand]:", random_prob_percentile)
+                    # print(f"{true_pos_prob}\t{n_possible_positions}")
                     # print("num possible moves from true position:", (self.positionUpdateMatrix[:, int(node.nodeid) - 1] > 0).sum())
                     # print("p_max:", np.max(self.mrXLikelihoodVector))
                     # input()
@@ -170,6 +167,30 @@ class GameEngine(QObject):
             # print("is AI")
             # Wait for 1 second to simulate thinking and give people time to see
             QTimer.singleShot(50, lambda: self.players[self.turn].play_next())
+
+    def check_game_state(self):
+        '''
+        Checks if the game is over or not
+        '''
+        # for p in self.players[:-1]:
+        #     if p.location == self.mrx.location:
+        #         self.game_over = True
+                # msg = "{} has caught Mr.X\n\tGame over!".format(p.name)
+
+        if len(self.mrxMoves) == self.maxMoves:
+            self.game_over = True
+            msg = "Mr.X has evaded justice!\n\tGame over!"
+
+        if self.game_over:
+            self.game_over_signal.emit(msg)
+            print(msg)
+            os.makedirs("games", exist_ok=True)
+            i = 0
+            while os.path.exists(f"games/prob_history_{i}.npy"):
+                i += 1
+            np.stack(self.prob_history).dump(f"games/prob_history_{i}.npy")
+            np.stack(self.true_pos_history).dump(f"games/true_pos_history_{i}.npy")
+            exit()
 
     def start_game(self):
         self.players[self.turn].play_next()

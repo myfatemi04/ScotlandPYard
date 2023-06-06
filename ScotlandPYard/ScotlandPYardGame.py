@@ -9,6 +9,8 @@ from .resources.stylesheet import stylesheet
 from .spyengine.engine import GameEngine
 from .spymap import SPYMap
 
+HEADLESS = True
+
 
 class ScotlandPYardGame(QMainWindow):
 
@@ -35,7 +37,8 @@ class ScotlandPYardGame(QMainWindow):
         font = QFont()
         font.setPointSize(16)
         self.initGameEngine()
-        self.initUI()
+        if not HEADLESS:
+            self.initUI()
 
         self.engine.start_game()
         self.hide()
@@ -70,6 +73,9 @@ class ScotlandPYardGame(QMainWindow):
         self.showMap()
 
     def refresh_game_state(self):
+        if HEADLESS:
+            return
+
         if self.engine is not None:
             self.spymap.update_state()
             self.game_state = self.engine.get_game_state()
@@ -157,13 +163,15 @@ class ScotlandPYardGame(QMainWindow):
         self.leftBox.setLayout(layout)
 
     def showMap(self):
-        self.spymap.update()
+        # self.spymap.update()
+        pass
 
     def center(self):
-        qr = self.frameGeometry()
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
+        # qr = self.frameGeometry()
+        # cp = QDesktopWidget().availableGeometry().center()
+        # qr.moveCenter(cp)
+        # self.move(qr.topLeft())
+        pass
 
     def resizeEvent(self, event):
         self.showMap()
