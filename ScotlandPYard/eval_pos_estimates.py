@@ -8,14 +8,19 @@ def simulate(positionUpdateMatrix):
     
     pctiles = []
     pctiles_rand = []
+    probs = []
+    probs_rand = []
 
-    for i in range(100):
+    for i in range(1000):
         pos = np.random.randint(0, N)
         superpos = np.zeros(N)
-
         superpos[pos] = 1
 
         for step in range(30):
+            if (step + 1) % 5 == 0:
+                superpos[:] = 0
+                superpos[pos] = 1
+
             available_ticket_types = positionUpdateMatrix[:, :, pos].sum(axis=1) > 0
 
             transition_probs = positionUpdateMatrix[available_ticket_types].mean(axis=0)[:, pos]
@@ -38,12 +43,21 @@ def simulate(positionUpdateMatrix):
 
             pctiles.append(true_pos_prob_percentile)
             pctiles_rand.append(random_prob_percentile)
+            probs.append(true_pos_prob*n_possible_positions)
+            # probs_rand.append(1 / n_possible_positions)
 
     print(np.mean(pctiles))
     print(np.mean(pctiles_rand))
 
+    print(np.mean(probs))
+    # print(np.mean(probs_rand))
+
     plt.hist(pctiles, bins=100, alpha=0.5, label="True position percentile")
     plt.hist(pctiles_rand, bins=100, alpha=0.5, label="Random position percentile")
+    plt.show()
+
+    plt.hist(probs, bins=100, alpha=0.5, label="True position probability")
+    # plt.hist(probs_rand, bins=100, alpha=0.5, label="Random position probability")
     plt.show()
 
 # def results(mrXLikelihoodVector, truePos):
