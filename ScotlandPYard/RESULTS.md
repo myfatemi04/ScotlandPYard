@@ -31,3 +31,7 @@ This is a plot of "percentiles" for each choice.
 This is a plot of true position probability compared to the probability of guessing correctly out of all accessible spots.
 
 It seems like this algorithm is only really useful for long-term probability estimation. Otherwise, it performs roughly as well as randomly choosing spots.
+
+### Is this the best we can do?
+
+What can we do to improve our chances at estimating Mr. X's location?

@@ -3,8 +3,10 @@ import matplotlib.pyplot as plt
 
 def simulate(positionUpdateMatrix):
     # Starts Mr X at a random initial position
+    # Shape os positionUpdateMatrix: (n_ticket_types, new_position, old_position)
+    # Then, we can matrix multiply by an (old_position,) vector to get a matrix of new position
+    # probabilities by ticket type.
     N = positionUpdateMatrix.shape[1]
-    print(positionUpdateMatrix.shape)
     
     pctiles = []
     pctiles_rand = []
@@ -17,15 +19,13 @@ def simulate(positionUpdateMatrix):
         superpos[pos] = 1
 
         for step in range(30):
-            if (step + 1) % 5 == 0:
-                superpos[:] = 0
-                superpos[pos] = 1
+            # if (step + 1) % 5 == 0:
+            #     superpos[:] = 0
+            #     superpos[pos] = 1
 
             available_ticket_types = positionUpdateMatrix[:, :, pos].sum(axis=1) > 0
 
-            transition_probs = positionUpdateMatrix[available_ticket_types].mean(axis=0)[:, pos]
-
-            superpos = positionUpdateMatrix[available_ticket_types].mean(axis=0).T @ superpos
+            superpos = np.einsum("ton,o->tn", positionUpdateMatrix[available_ticket_types], superpos).mean(axis=0)
             superpos = superpos / superpos.sum()
 
             n_possible_positions = (superpos > 0).sum()
@@ -37,13 +37,14 @@ def simulate(positionUpdateMatrix):
             true_pos_prob_percentile = sorted_probs[:prob_position].sum()
 
             # set next position
+            transition_probs = positionUpdateMatrix[available_ticket_types].mean(axis=0).T[pos]
             pos = np.random.choice(N, p=transition_probs)
 
             # print(f"{true_pos_prob:.4f} {1/n_possible_positions:.4f} {true_pos_prob_percentile:.4f} {random_prob_percentile:.4f}")
 
             pctiles.append(true_pos_prob_percentile)
             pctiles_rand.append(random_prob_percentile)
-            probs.append(true_pos_prob*n_possible_positions)
+            probs.append(true_pos_prob) #*n_possible_positions)
             # probs_rand.append(1 / n_possible_positions)
 
     print(np.mean(pctiles))
