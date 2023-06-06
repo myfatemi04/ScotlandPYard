@@ -24,7 +24,8 @@ class ScotlandPYardGame(QMainWindow):
         # self.grview.setViewport(QGLWidget())
         self.numMrXMoves = 30
 
-        self.revealedstates = [2, 8, 14, 20, 29]
+        # self.revealedstates = [2, 8, 14, 20, 29]
+        self.revealedstates = [0] #, 25]
 
         self.spymap = SPYMap(map_name='map3')
 
@@ -37,6 +38,7 @@ class ScotlandPYardGame(QMainWindow):
         self.initUI()
 
         self.engine.start_game()
+        self.hide()
 
     def initUI(self):
 

@@ -81,7 +81,7 @@ class SPYMap(QGraphicsView):
         self.update_nodes()
         print_prof_data()
 
-    @profile
+    # @profile
     def update_nodes(self):
         pos_mat = np.array([[-item.pos().x(), -item.pos().y()] for item in self.graph.nodes()])
 
